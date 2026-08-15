@@ -10,10 +10,10 @@ from decimal import Decimal
 from sqlalchemy import BigInteger, Date, DateTime, Numeric, String, func
 from sqlalchemy.orm import Mapped, mapped_column
 
-from models.task import Base   # ← 关键：从 task.py 导入公共 Base
+from models.base import BusinessBase   # ← 关键：从 task.py 导入公共 Base
 
 
-class RegionDailyMetric(Base):
+class RegionDailyMetric(BusinessBase):
     """区域日度营销指标：供电量、售电量、线损等。"""
 
     __tablename__ = "region_daily_metrics"
@@ -28,7 +28,7 @@ class RegionDailyMetric(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
 
-class LineLossDetail(Base):
+class LineLossDetail(BusinessBase):
     """线路日线损明细：支撑"找出高损线路/台区"类问题。"""
 
     __tablename__ = "line_loss_details"

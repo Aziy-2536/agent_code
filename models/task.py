@@ -1,22 +1,21 @@
-﻿"""任务域持久化模型。
+﻿"""任务域持久化模型（Agent 域 → agent 库）。
 
 设计决策：
 1. 内部主键自增 BIGINT，对外 task_id 用 UUID + 唯一索引（防枚举）。
 2. 多变结构（工具入参、节点详情）用 JSON 列。
 3. 时间字段统一 created_at / updated_at / finished_at 命名。
+4. 双库方案：任务表属 Agent 域，挂 AgentBase → agent 库。
 """
 import uuid
 from datetime import datetime
 
 from sqlalchemy import BigInteger, DateTime, String, Text, JSON, func
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column
+
+from models.base import AgentBase
 
 
-class Base(DeclarativeBase):
-    """所有模型的公共基类（建表时按它的 metadata 建）。"""
-
-
-class AnalysisTask(Base):
+class AnalysisTask(AgentBase):
     """分析任务主表：一次用户请求的根实体。"""
 
     __tablename__ = "analysis_tasks"
@@ -40,7 +39,7 @@ class AnalysisTask(Base):
     )
     finished_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     
-class TaskStep(Base):
+class TaskStep(AgentBase):
     """任务内部执行步骤（对应 LangGraph 节点的一次执行）。"""
 
     __tablename__ = "task_steps"
@@ -54,7 +53,7 @@ class TaskStep(Base):
     finished_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
 
-class ToolCall(Base):
+class ToolCall(AgentBase):
     """工具调用记录：审计与评测的关键数据源。"""
 
     __tablename__ = "tool_calls"
@@ -70,7 +69,7 @@ class ToolCall(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
 
-class HumanApproval(Base):
+class HumanApproval(AgentBase):
     """人工审批记录：高风险动作必须留痕。"""
 
     __tablename__ = "human_approvals"
@@ -85,7 +84,7 @@ class HumanApproval(Base):
     decided_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
 
-class AnalysisReport(Base):
+class AnalysisReport(AgentBase):
     """分析报告：任务最终产物，结论与数据依据/引用强关联。"""
 
     __tablename__ = "analysis_reports"
@@ -103,3 +102,4 @@ class AnalysisReport(Base):
     status: Mapped[str] = mapped_column(String(32), default="DRAFT")  # DRAFT / REVIEWED / PUBLISHED
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
     
+

@@ -1,4 +1,4 @@
-﻿"""MySQL 异步连接管理（SQLAlchemy 2.0 async + asyncmy）。
+"""MySQL 异步连接管理（SQLAlchemy 2.0 async + asyncmy）。
 
 设计决策：
 1. Engine 管连接池，Session 管工作单元——职责分离。
@@ -38,12 +38,35 @@ def get_engine() -> AsyncEngine:
 
 
 @lru_cache(maxsize=1)
+def get_agent_engine() -> AsyncEngine:
+    """Agent 库引擎（agent：任务/会话/记忆）——双库物理隔离。"""
+    settings = get_settings()
+    return create_async_engine(
+        settings.mysql_agent_dsn,                # agent 库 DSN
+        pool_size=settings.mysql_pool_size,
+        max_overflow=settings.mysql_max_overflow,
+        pool_recycle=3600,
+        echo=settings.mysql_echo,
+    )
+
+
+@lru_cache(maxsize=1)
 def get_session_maker() -> async_sessionmaker[AsyncSession]:
-    """创建（或复用）异步 Session 工厂。"""
+    """创建（或复用）异步 Session 工厂（业务库 power_insight）。"""
     return async_sessionmaker(
         get_engine(),                            # 用上面的连接池
         class_=AsyncSession,                     # 指定会话类型（异步）
         expire_on_commit=False,                  # 关键！提交后不自动过期，避免异步隐式 IO
+    )
+
+
+@lru_cache(maxsize=1)
+def get_agent_session_maker() -> async_sessionmaker[AsyncSession]:
+    """Agent 库 Session 工厂（任务/会话/记忆操作入口）。"""
+    return async_sessionmaker(
+        get_agent_engine(),
+        class_=AsyncSession,
+        expire_on_commit=False,
     )
 
 
@@ -53,3 +76,11 @@ async def dispose_engine() -> None:
     await engine.dispose()
     get_engine.cache_clear()                     # 清缓存，允许下次重建
     get_session_maker.cache_clear()
+
+
+async def dispose_agent_engine() -> None:
+    """释放 Agent 库连接池（应用关闭时调用）。"""
+    engine = get_agent_engine()
+    await engine.dispose()
+    get_agent_engine.cache_clear()
+    get_agent_session_maker.cache_clear()

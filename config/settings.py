@@ -50,6 +50,9 @@ class Settings(BaseSettings):
     # DSN 格式：协议://用户:密码@主机:端口/库名，db/mysql.py 直接拿这个建连接池
     
     mysql_dsn: str #= "mysql+asyncmy://power:power@localhost:3307/power_insight"
+    # 业务库 DSN（power_insight：东莞数据/指标字典）
+    mysql_agent_dsn: str  #= "mysql+asyncmy://power:power@localhost:3307/agent"
+    # Agent 库 DSN（agent：任务/会话/记忆）——双库物理隔离，同一实例
     # MYSQL_POOL_SIZE: int = 5
     # MYSQL_MAX_OVERFLOW: int = 10
     mysql_echo: bool = False  # 是否打印 SQL 日志，True 会打印所有 SQL，生产环境慎用

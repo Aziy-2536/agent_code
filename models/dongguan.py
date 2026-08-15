@@ -1,4 +1,4 @@
-"""东莞版数据模型：维度表 + 汇总事实表（业务分析主数据源）。
+﻿"""东莞版数据模型：维度表 + 汇总事实表（业务分析主数据源）。
 
 设计决策（见 docs/database-design.md）：
 1. 按数据形态分层：维度（少变）/ 汇总（预聚合）/ 明细（海量，暂缓）。
@@ -22,12 +22,12 @@ from decimal import Decimal
 from sqlalchemy import BigInteger, Date, DateTime, Numeric, String, func
 from sqlalchemy.orm import Mapped, mapped_column
 
-from models.task import Base
+from models.base import BusinessBase
 
 
 # ==================== 维度层（少变，不分区） ====================
 
-class DimRegion(Base):
+class DimRegion(BusinessBase):
     """区域维度：东莞 32 镇街。"""
 
     __tablename__ = "dim_region"
@@ -38,7 +38,7 @@ class DimRegion(Base):
     data_source: Mapped[str] = mapped_column(String(16), default="模拟")    # 数据来源
 
 
-class DimLine(Base):
+class DimLine(BusinessBase):
     """线路维度：10kV 线路档案。"""
 
     __tablename__ = "dim_line"
@@ -49,7 +49,7 @@ class DimLine(Base):
     voltage_level: Mapped[str] = mapped_column(String(8), default="10kV")
 
 
-class DimTaiqu(Base):
+class DimTaiqu(BusinessBase):
     """台区维度：变压器供电范围（"高损台区"分析粒度）。"""
 
     __tablename__ = "dim_taiqu"
@@ -61,7 +61,7 @@ class DimTaiqu(Base):
     capacity: Mapped[Decimal] = mapped_column(Numeric(10, 2), default=0)    # 容量 kVA
 
 
-class DimUser(Base):
+class DimUser(BusinessBase):
     """用户维度（精简版）。
 
     评审修订：补 taiqu_code——用户必须归属到台区，
@@ -77,7 +77,7 @@ class DimUser(Base):
     meter_no: Mapped[str] = mapped_column(String(32), default="")           # 电表号（关联 dim_meter）
 
 
-class DimMeter(Base):
+class DimMeter(BusinessBase):
     """电表（计量点）维度。
 
     评审修订：明细数据的键实体是"计量点"而非"用户"——
@@ -95,7 +95,7 @@ class DimMeter(Base):
 
 # ==================== 汇总层（预聚合，Agent 分析主数据源） ====================
 
-class FactRegionDaily(Base):
+class FactRegionDaily(BusinessBase):
     """区域日度汇总：供电/售电/线损/回收率。"""
 
     __tablename__ = "fact_region_daily"
@@ -111,7 +111,7 @@ class FactRegionDaily(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
 
-class FactLineLoss(Base):
+class FactLineLoss(BusinessBase):
     """线路日度线损：支撑"高损线路"分析。
 
     评审修订：主键列序改为 (line_code, stat_date)——
@@ -132,7 +132,7 @@ class FactLineLoss(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
 
-class FactTaiquDaily(Base):
+class FactTaiquDaily(BusinessBase):
     """台区日度线损：支撑"高损台区"分析（比线路更细的粒度）。
 
     评审修订：补数据质量字段——
@@ -152,3 +152,4 @@ class FactTaiquDaily(Base):
     collection_rate: Mapped[Decimal | None] = mapped_column(Numeric(10, 6), nullable=True)  # 台区级回收率
     data_source: Mapped[str] = mapped_column(String(16), default="模拟")
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+

@@ -9,10 +9,10 @@ from datetime import datetime
 from sqlalchemy import BigInteger, DateTime, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
-from models.task import Base
+from models.base import BusinessBase
 
 
-class MetricDefinition(Base):
+class MetricDefinition(BusinessBase):
     """标准指标定义：口径与公式的唯一事实来源。"""
 
     __tablename__ = "metric_definitions"

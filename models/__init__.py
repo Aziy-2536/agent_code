@@ -1,5 +1,10 @@
-"""持久化模型包：统一导出，供建表脚本与 Repository 使用。"""
+"""持久化模型包：统一导出，供建表脚本与 Repository 使用。
 
+双库划分：
+- AgentBase（→ agent 库）：任务域 + 记忆域
+- BusinessBase（→ power_insight 库）：业务域 + 知识域
+"""
+from models.base import AgentBase, BusinessBase
 from models.dongguan import (
     DimLine,
     DimMeter,
@@ -11,29 +16,51 @@ from models.dongguan import (
     FactTaiquDaily,
 )
 from models.knowledge import MetricDefinition
+from models.memory import (
+    Conversation,
+    ConversationMessage,
+    EpisodicMemory,
+    SemanticMemory,
+)
 from models.power import LineLossDetail, RegionDailyMetric
-from models.task import AnalysisReport, AnalysisTask, Base, HumanApproval, TaskStep, ToolCall
+from models.task import AnalysisReport, AnalysisTask, HumanApproval, TaskStep, ToolCall
+
+# Agent 域（→ agent 库）
+AGENT_MODELS = [AnalysisTask, TaskStep, ToolCall, HumanApproval, AnalysisReport,
+                Conversation, ConversationMessage, EpisodicMemory, SemanticMemory]
+
+# 业务域（→ power_insight 库）
+BUSINESS_MODELS = [DimRegion, DimLine, DimTaiqu, DimUser, DimMeter,
+                   FactRegionDaily, FactLineLoss, FactTaiquDaily,
+                   MetricDefinition, RegionDailyMetric, LineLossDetail]
 
 __all__ = [
-    "Base",
-    # 任务域
+    # 双基类
+    "AgentBase",
+    "BusinessBase",
+    # Agent 域：任务
     "AnalysisTask",
     "TaskStep",
     "ToolCall",
     "HumanApproval",
     "AnalysisReport",
-    # 知识域
+    # Agent 域：记忆/会话
+    "Conversation",
+    "ConversationMessage",
+    "EpisodicMemory",
+    "SemanticMemory",
+    # 业务域：知识
     "MetricDefinition",
-    # 旧版业务表（Agent 主链路跑通后清理）
+    # 业务域：旧版业务表（Agent 主链路跑通后清理）
     "RegionDailyMetric",
     "LineLossDetail",
-    # 东莞版：维度层
+    # 业务域：东莞版维度
     "DimRegion",
     "DimLine",
     "DimTaiqu",
     "DimUser",
     "DimMeter",
-    # 东莞版：汇总层
+    # 业务域：东莞版汇总
     "FactRegionDaily",
     "FactLineLoss",
     "FactTaiquDaily",

@@ -23,7 +23,7 @@ from app.api.routes import reports, tasks
 from config.settings import get_settings
 
 # 关闭时的资源释放：MySQL 连接池 / Redis 连接
-from db import close_redis, dispose_engine
+from db import close_redis, dispose_agent_engine, dispose_engine
 
 # 启动时读一次配置，全局使用
 settings = get_settings()
@@ -36,8 +36,9 @@ async def lifespan(app: FastAPI):
     # 关闭阶段（yield 之后）：进程退出前释放资源
     #   优雅关闭：先告诉数据库"我要走了"，断开所有连接
     #   不释放的话：进程退出时连接会挂着，数据库侧积累僵尸连接
-    await dispose_engine()   # 释放 MySQL 连接池
-    await close_redis()      # 关闭 Redis 连接
+    await dispose_engine()          # 释放业务库（power_insight）连接池
+    await dispose_agent_engine()    # 释放 Agent 库（agent）连接池
+    await close_redis()             # 关闭 Redis 连接
 
 
 # 创建 FastAPI 实例：
