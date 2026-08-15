@@ -1,4 +1,4 @@
-"""持久化模型包：统一导出，供建表脚本与 Repository 使用。"""
+﻿"""持久化模型包：统一导出，供建表脚本与 Repository 使用。"""
 
 from models.knowledge import MetricDefinition
 from models.power import LineLossDetail, RegionDailyMetric
