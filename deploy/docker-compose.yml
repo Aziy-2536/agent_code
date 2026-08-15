@@ -1,0 +1,112 @@
+# PowerInsight Agent 本地依赖环境
+# MySQL / Redis / Milvus（含 etcd、minio）
+#
+# 端口避让说明（避免与本机或历史容器冲突）：
+#   MySQL   宿主机 3307 -> 容器 3306   （避开常规 3306）
+#   Redis   宿主机 6380 -> 容器 6379   （避开常规 6379）
+#   Milvus  宿主机 19530/9091 -> 容器 19530/9091
+# etcd / minio 仅在 compose 内部网络使用，不映射到宿主机。
+#
+# 启动：docker compose -f deploy/docker-compose.yml up -d
+# 停止：docker compose -f deploy/docker-compose.yml down
+# 数据持久化于 deploy/volumes/ 目录。
+
+name: power-insight
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: power-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: power_insight
+      MYSQL_USER: power
+      MYSQL_PASSWORD: power
+      TZ: Asia/Shanghai
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-time-zone=+08:00
+    ports:
+      - "3307:3306"
+    volumes:
+      - ./volumes/mysql:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  redis:
+    image: redis:7-alpine
+    container_name: power-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6380:6379"
+    volumes:
+      - ./volumes/redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  etcd:
+    image: quay.io/coreos/etcd:v3.5.5
+    container_name: power-etcd
+    restart: unless-stopped
+    environment:
+      - ETCD_AUTO_COMPACTION_MODE=revision
+      - ETCD_AUTO_COMPACTION_RETENTION=1000
+      - ETCD_QUOTA_BACKEND_BYTES=4294967296
+    command: etcd -advertise-client-urls=http://etcd:2379 -listen-client-urls http://0.0.0.0:2379 --data-dir /etcd
+    volumes:
+      - ./volumes/etcd:/etcd
+
+  minio:
+    image: minio/minio:latest
+    container_name: power-minio
+    restart: unless-stopped
+    environment:
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+    command: minio server /minio_data
+    volumes:
+      - ./volumes/minio:/minio_data
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/127.0.0.1/9000' || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  milvus:
+    image: milvusdb/milvus:v2.4.15
+    container_name: power-milvus
+    restart: unless-stopped
+    command: ["milvus", "run", "standalone"]
+    security_opt:
+      - seccomp:unconfined
+    environment:
+      ETCD_ENDPOINTS: etcd:2379
+      MINIO_ADDRESS: minio:9000
+      TZ: Asia/Shanghai
+    ports:
+      - "19530:19530"   # gRPC
+      - "9091:9091"     # 健康检查 / 指标
+    volumes:
+      - ./volumes/milvus:/var/lib/milvus
+    depends_on:
+      etcd:
+        condition: service_started
+      minio:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/127.0.0.1/19530' || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 60s

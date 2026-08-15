@@ -1,0 +1,25 @@
+# 环境配置（含账号密码，禁止提交）
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# 数据与部署产物
+deploy/volumes/
+data/mock_power/*.csv
+data/mock_power/*.xlsx
+data/knowledge/*.json
+
+# IDE / 系统
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db

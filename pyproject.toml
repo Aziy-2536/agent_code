@@ -1,0 +1,71 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "power-insight-agent"
+version = "0.1.0"
+description = "Power marketing and operations analysis agent platform"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    # Web 接入层
+    "fastapi>=0.115,<1.0",
+    "uvicorn[standard]>=0.30,<1.0",
+    "python-multipart>=0.0.9,<1.0",
+    # 配置与数据契约
+    "pydantic>=2.7,<3.0",
+    "pydantic-settings>=2.3,<3.0",
+    "python-dotenv>=1.0,<2.0",
+    # 存储
+    "SQLAlchemy>=2.0,<3.0",
+    "PyMySQL>=1.1,<2.0",
+    "asyncmy>=0.2.9,<1.0",
+    "redis>=5.0,<6.0",
+    "pymilvus>=2.4,<4.0",
+    "kafka-python>=2.0.2,<4.0",
+    # Agent 编排
+    "langgraph>=0.2,<2.0",
+    "openai>=1.40,<3.0",
+    # 基础设施
+    "httpx>=0.27,<1.0",
+    "tenacity>=8.3,<10.0",
+    "orjson>=3.10,<4.0",
+    "prometheus-client>=0.20,<1.0",
+    "cryptography>=42.0,<50.0",
+    # 检索
+    "rank-bm25>=0.2,<1.0",
+]
+
+[project.optional-dependencies]
+# 向量化依赖较重（含 torch），按需安装：pip install -e ".[rag]"
+rag = [
+    "sentence-transformers>=2.7,<4.0",
+    "torch>=2.2",
+]
+# 文件适配器依赖（Excel/CSV）：pip install -e ".[data]"
+data = [
+    "pandas>=2.2,<3.0",
+    "openpyxl>=3.1,<4.0",
+]
+# 开发与测试：pip install -e ".[dev]"
+dev = [
+    "pytest>=8.0,<9.0",
+    "pytest-asyncio>=0.23,<1.0",
+    "ruff>=0.5,<1.0",
+    "mypy>=1.10,<2.0",
+]
+
+[tool.setuptools.packages.find]
+include = ["*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W", "UP"]

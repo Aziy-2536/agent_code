@@ -1,0 +1,40 @@
+# PowerInsight Agent 运行依赖
+# 与 pyproject.toml 中 [project].dependencies 保持一致
+# 安装：pip install -r requirements.txt
+
+# Web 接入层
+fastapi>=0.115,<1.0
+uvicorn[standard]>=0.30,<1.0
+python-multipart>=0.0.9,<1.0
+
+# 配置与数据契约
+pydantic>=2.7,<3.0
+pydantic-settings>=2.3,<3.0
+python-dotenv>=1.0,<2.0
+
+# 存储
+SQLAlchemy>=2.0,<3.0
+PyMySQL>=1.1,<2.0
+asyncmy>=0.2.9,<1.0
+redis>=5.0,<6.0
+pymilvus>=2.4,<4.0
+kafka-python>=2.0.2,<4.0
+
+# Agent 编排
+langgraph>=0.2,<2.0
+openai>=1.40,<3.0
+
+# 基础设施
+httpx>=0.27,<1.0
+tenacity>=8.3,<10.0
+orjson>=3.10,<4.0
+prometheus-client>=0.20,<1.0
+cryptography>=42.0,<50.0
+
+# 检索
+rank-bm25>=0.2,<1.0
+
+# 可选分组（按需安装）：
+#   pip install -e ".[rag]"   # sentence-transformers + torch（向量化，体积大）
+#   pip install -e ".[data]"  # pandas + openpyxl（Excel/CSV 文件适配）
+#   pip install -e ".[dev]"   # pytest / ruff / mypy（开发测试）
