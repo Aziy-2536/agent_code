@@ -1,4 +1,4 @@
-# =============================
+﻿# =============================
 # Python
 # =============================
 __pycache__/
@@ -92,7 +92,7 @@ tmp/
 # =============================
 # Model, embedding and vector-store artifacts
 # =============================
-models/
+model_weights/  # ML 权重（models/ 是代码目录，绝不能忽略）
 model_cache/
 .cache/
 hf_cache/
@@ -172,3 +172,4 @@ exports/
 # PowerInsight 本地数据卷
 # =============================
 deploy/volumes/
+
