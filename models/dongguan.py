@@ -1,4 +1,4 @@
-﻿"""东莞版数据模型：维度表 + 汇总事实表（业务分析主数据源）。
+"""东莞版数据模型：维度表 + 汇总事实表（业务分析主数据源）。
 
 设计决策（见 docs/database-design.md）：
 1. 按数据形态分层：维度（少变）/ 汇总（预聚合）/ 明细（海量，暂缓）。
@@ -76,6 +76,22 @@ class DimUser(BusinessBase):
     user_type: Mapped[str] = mapped_column(String(8), default="居民")       # 居民/一般工商业/大工业
     meter_no: Mapped[str] = mapped_column(String(32), default="")           # 电表号（关联 dim_meter）
 
+    # ==================== PII 字段（设计见 infra/security.py） ====================
+    # 姓名/电话：中敏，明文存储 + 出库前脱敏（mask_name / mask_phone）
+    customer_name: Mapped[str] = mapped_column(String(32), default="")      # 客户姓名（出库脱敏）
+    phone: Mapped[str] = mapped_column(String(16), default="")              # 联系电话（出库脱敏）
+    # 用电地址：中高敏，明文存储 + 出库分级脱敏（mask_address：保留到路/小区级）。
+    # 注意：address 是"物理位置"（人在哪），≠ 电气归属（电从哪来）；
+    # 户-台区-线路 归属链由 taiqu_code→dim_taiqu→line_code→dim_line 表达，与地址无关。
+    address: Mapped[str] = mapped_column(String(256), default="")           # 用电地址（出库脱敏）
+    # 身份证：高敏，三层存储——
+    #   id_card_hash   SHA-256 摘要（等值匹配/去重，不可逆）
+    #   id_card_enc    AES-GCM 密文（低频明文核验，可逆）
+    #   id_card_masked 脱敏副本 440106********1234（展示零解密成本）
+    id_card_hash: Mapped[str] = mapped_column(String(64), default="")       # SHA-256(id_card)
+    id_card_enc: Mapped[str] = mapped_column(String(256), default="")      # AES-GCM 密文
+    id_card_masked: Mapped[str] = mapped_column(String(32), default="")    # 脱敏副本
+
 
 class DimMeter(BusinessBase):
     """电表（计量点）维度。
@@ -150,6 +166,28 @@ class FactTaiquDaily(BusinessBase):
     loss_rate: Mapped[Decimal] = mapped_column(Numeric(10, 6), default=0)
     read_flag: Mapped[str] = mapped_column(String(16), default="ACTUAL")       # ACTUAL 实抄 / ESTIMATED 估抄
     collection_rate: Mapped[Decimal | None] = mapped_column(Numeric(10, 6), nullable=True)  # 台区级回收率
+    data_source: Mapped[str] = mapped_column(String(16), default="模拟")
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class FactUserDaily(BusinessBase):
+    """户日电量明细（样例级，支撑户级查询与台区对账演示）。
+
+    设计决策：
+    1. 样例版：30 天 × 3200 户 ≈ 9.6 万行（真实版 14.6 亿行/年是 v3 的事，
+       见 docs/database.md §5.1——日期滚动分区 + 归档）。
+    2. 复合主键 (user_id, stat_date)：每户每天唯一。
+    3. 与台区汇总自洽：台区 supply_kwh ≈ Σ(户表 kwh) × (1 + 台区线损率)，
+       支撑"台区线损 = 总表电量 − Σ户表电量"对账演示。
+    """
+
+    __tablename__ = "fact_user_daily"
+
+    user_id: Mapped[str] = mapped_column(String(32), primary_key=True)
+    stat_date: Mapped[date] = mapped_column(Date, primary_key=True)
+    region_code: Mapped[str] = mapped_column(String(8), index=True)            # 镇街（冗余，加速按区域查）
+    taiqu_code: Mapped[str] = mapped_column(String(32), index=True)            # 台区（冗余，加速对账）
+    kwh: Mapped[Decimal] = mapped_column(Numeric(12, 4), default=0)            # 当日用电量（度）
     data_source: Mapped[str] = mapped_column(String(16), default="模拟")
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 

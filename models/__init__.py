@@ -14,6 +14,7 @@ from models.dongguan import (
     FactLineLoss,
     FactRegionDaily,
     FactTaiquDaily,
+    FactUserDaily,
 )
 from models.knowledge import MetricDefinition
 from models.memory import (
@@ -22,6 +23,7 @@ from models.memory import (
     EpisodicMemory,
     SemanticMemory,
 )
+from models.metadata import MetaField, MetaTable, MetaValue
 from models.power import LineLossDetail, RegionDailyMetric
 from models.task import AnalysisReport, AnalysisTask, HumanApproval, TaskStep, ToolCall
 
@@ -31,8 +33,9 @@ AGENT_MODELS = [AnalysisTask, TaskStep, ToolCall, HumanApproval, AnalysisReport,
 
 # 业务域（→ power_insight 库）
 BUSINESS_MODELS = [DimRegion, DimLine, DimTaiqu, DimUser, DimMeter,
-                   FactRegionDaily, FactLineLoss, FactTaiquDaily,
-                   MetricDefinition, RegionDailyMetric, LineLossDetail]
+                   FactRegionDaily, FactLineLoss, FactTaiquDaily, FactUserDaily,
+                   MetricDefinition, RegionDailyMetric, LineLossDetail,
+                   MetaTable, MetaField, MetaValue]
 
 __all__ = [
     # 双基类
@@ -51,6 +54,10 @@ __all__ = [
     "SemanticMemory",
     # 业务域：知识
     "MetricDefinition",
+    # 业务域：元数据知识库
+    "MetaTable",
+    "MetaField",
+    "MetaValue",
     # 业务域：旧版业务表（Agent 主链路跑通后清理）
     "RegionDailyMetric",
     "LineLossDetail",
@@ -64,4 +71,5 @@ __all__ = [
     "FactRegionDaily",
     "FactLineLoss",
     "FactTaiquDaily",
+    "FactUserDaily",
 ]

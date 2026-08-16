@@ -92,6 +92,11 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"                 # 签名算法
     jwt_expire_minutes: int = Field(default=1440, gt=0)  # token 有效期：1440 分钟 = 24 小时
 
+    # ==================== PII 加密 ====================
+    # 身份证等敏感字段的 AES-GCM 加密密钥（独立于 jwt_secret，职责分离）
+    # 生产必须换成强随机密钥：python -c "from infra.security import generate_secret_key; print(generate_secret_key())"
+    pii_secret_key: str = "change-me-pii-key-in-production"
+
     # ==================== 租户与权限 ====================
     enable_multi_tenant: bool = False   # 一期单租户，二期开多租户
     default_tenant: str = "default"     # 默认租户 id
@@ -132,17 +137,20 @@ class Settings(BaseSettings):
     @field_validator("llm_base_url", mode="before")
     @classmethod
     def _strip_base_url(cls, v: object) -> str:
-        """去掉 base_url 末尾斜杠，避免拼接 URL 时出现双斜杠。"""
+        """去掉 base_url 末尾斜杠，并在类型错误时明确报错，不再默默返回空字符串。"""
         if isinstance(v, str):
             return v.rstrip("/")
-        return ""
+        # 修复点 3：之前 return "" 会静默掩盖错误，现在改为抛出明确异常
+        raise ValueError(
+            f"llm_base_url must be a string, but received {type(v).__name__}: {v}"
+        )
 
     # log_safe_summary：给启动日志用的"脱敏快照"
     # 为什么：直接 print(settings) 会把密码、API Key、JWT 密钥全打出来——日志泄露
     # 实现：model_dump() 转成 dict，遇到敏感字段就替换成 ***
     def log_safe_summary(self) -> dict:
         """返回脱敏后的配置摘要，用于启动日志；禁止直接打印整个 Settings。"""
-        secrets = {"mysql_dsn", "llm_api_key", "jwt_secret"}
+        secrets = {"mysql_dsn", "llm_api_key", "jwt_secret", "pii_secret_key"}
         return {
             key: ("***" if key in secrets else value)
             for key, value in self.model_dump().items()

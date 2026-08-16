@@ -2,9 +2,17 @@
 
 面向电力营销与经营分析场景的多智能体数据分析平台。
 
-当前仓库先建立工程骨架，后续按 `docs/development-order.md` 的顺序实现。
+当前仓库先建立工程骨架，后续按 `docs/architecture.md`（开发顺序章节）的顺序实现。
 
 核心技术方向：FastAPI、LangGraph、MySQL、Redis、Milvus、Kafka、MCP、Agent Harness。
+
+## 文档导航
+
+| 文档 | 内容 |
+|---|---|
+| `docs/architecture.md` | 总体架构 + 开发顺序 + 项目文件树 |
+| `docs/database.md` | 数据库设计（双库结构/表设计/量级/决策记录） |
+| `docs/learning.md` | 面试讲解指南 + 参考项目学习笔记 |
 
 ## 环境准备
 

@@ -50,7 +50,11 @@ async def create_task(
                                               #   - question 为空 → 自动 422（不用自己写 if）
     db: AsyncSession = Depends(get_db),       # 依赖注入：从 get_db 拿请求级 Session
 ) -> TaskResponse:
-    """提交一个分析任务，返回任务信息（状态初始 CREATED）。"""
+    """提交一个分析任务，返回任务信息（状态初始 CREATED）。
+
+    创建后立即触发后台执行（asyncio.create_task），接口不等执行完成——
+    返回 201，客户端轮询 GET /tasks/{task_id} 看状态。
+    """
     # 创建 Repository（把注入的 session 传进去）
     repo = TaskRepository(db)
     # 调用 Repository 建任务（写入 MySQL）
@@ -59,8 +63,14 @@ async def create_task(
         task_type=req.task_type,              # 任务类型（默认 analysis）
         tenant_id=req.tenant_id or "default", # 用户没传就用默认租户
     )
+
+    # 后台执行 Agent（不阻塞响应）；task_id 已由 create_task 生成
+    import asyncio
+
+    from app.workers.analysis_worker import run_agent_in_background
+    asyncio.create_task(run_agent_in_background(task.task_id))
+
     # model_validate：ORM 对象 -> Pydantic 响应
-    #   from_attributes=True 让 Pydantic 按字段名从对象取值（不用手抄）
     return TaskResponse.model_validate(task)
 
 
